@@ -1,0 +1,55 @@
+name: Assemble verified tablet download
+on:
+  push:
+    branches: [main]
+    paths: ['latest.json', 'nubi-tablet-*.part*']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: nubi-apk-download
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reassemble and verify package
+        id: apk
+        run: |
+          python3 - <<'PY'
+          import json,hashlib,os
+          from pathlib import Path
+          m=json.loads(Path('latest.json').read_text())
+          assert m['package']=='ai.decisionos.nubi.tablet'
+          v=m['versionCode'];assert type(v)==int and 0<v<=2100000000
+          assert m['file']==f'nubi-tablet-{v}.apk'
+          assert 1<=len(m['parts'])<=8
+          out=Path(os.environ['RUNNER_TEMP'])/'nubi-tablet.apk'
+          digest=hashlib.sha256();size=0
+          with out.open('wb') as target:
+           for i,part in enumerate(m['parts']):
+            assert part==f'nubi-tablet-{v}.part{i}'
+            with Path(part).open('rb') as source:
+             while chunk:=source.read(65536):
+              size+=len(chunk);assert size<=256*1024*1024
+              digest.update(chunk);target.write(chunk)
+          assert digest.hexdigest()==m['sha256']
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write(f'version={v}\n')
+          PY
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -1)"
+          "$APKSIGNER" verify --verbose --print-certs "$RUNNER_TEMP/nubi-tablet.apk" > "$RUNNER_TEMP/signature.txt"
+          grep -qi '091d631eb8bafc24bb0139e29c54efaa09bdf1453e58a49203a71e2eac1c3e51' "$RUNNER_TEMP/signature.txt"
+      - name: Publish installation APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.apk.outputs.version }}
+        run: |
+          tag="tablet-$VERSION"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release exists; preserving immutable artifact."
+          else
+            gh release create "$tag" "$RUNNER_TEMP/nubi-tablet.apk" latest.json --target "$GITHUB_SHA" --title "누비 태블릿 $VERSION" --notes '최초 설치용 APK입니다. 앱에서 새 버전을 자동으로 확인·다운로드하며 Android가 허용하는 경우 자동 설치합니다. 처음에는 누비의 앱 설치 허용이 필요합니다.' --latest
+          fi
