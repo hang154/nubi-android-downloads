@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "package": "ai.decisionos.nubi.tablet",
-  "versionCode": 1793978193,
-  "file": "nubi-tablet-1793978193.apk",
-  "sha256": "f54152f27cf438b3ca502f67a7f65bb2c267e39f4c87df0f68f78ff4bd255296",
+  "versionCode": 1794004913,
+  "file": "nubi-tablet-1794004913.apk",
+  "sha256": "85ab59af9c5497c0e05e663d252fda142df0c3063471052dc9ddfda03786f961",
   "sourceCommit": "2bf48ab064e5672110ab49003b7ddfadaeeb9221",
   "parts": [
-    "nubi-tablet-1793978193.part0",
-    "nubi-tablet-1793978193.part1",
-    "nubi-tablet-1793978193.part2",
-    "nubi-tablet-1793978193.part3"
+    "nubi-tablet-1794004913.part0",
+    "nubi-tablet-1794004913.part1",
+    "nubi-tablet-1794004913.part2",
+    "nubi-tablet-1794004913.part3"
   ]
 }
